@@ -15,6 +15,6 @@ fun NavGraphBuilder.recipeFormScreen() {
     composable(
         route = newRecipeNavigationRoute,
     ) {
-        RecipeFormScreen()
+        RecipeFormRoute()
     }
 }

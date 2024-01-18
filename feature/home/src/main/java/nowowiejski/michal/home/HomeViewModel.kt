@@ -6,12 +6,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import nowowiejski.michal.domain.RecipeRepository
 import nowowiejski.michal.model.Recipe
 
 class HomeViewModel(recipeRepository: RecipeRepository) : ViewModel() {
 
     val uiState: StateFlow<HomeUiState> =
-        recipeRepository.getRecipes().map(
+        recipeRepository.getAllRecipes().map(
             HomeUiState::Success,
         ).stateIn(
             scope = viewModelScope,

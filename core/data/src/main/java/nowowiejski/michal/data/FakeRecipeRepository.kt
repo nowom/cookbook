@@ -1,4 +1,4 @@
-package nowowiejski.michal.home
+package nowowiejski.michal.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -6,13 +6,8 @@ import kotlinx.coroutines.flow.flowOn
 import nowowiejski.michal.common.AppDispatcher
 import nowowiejski.michal.model.Recipe
 
-interface RecipeRepository {
-    fun getRecipes(): Flow<List<Recipe>>
-}
-
-class FakeRecipeRepository(private val ioDispatcher: AppDispatcher) : RecipeRepository {
-
-    override fun getRecipes(): Flow<List<Recipe>> {
+class FakeRecipeRepository(private val ioDispatcher: AppDispatcher) {
+    fun getRecipes(): Flow<List<Recipe>> {
         return flow {
             emit(
                 generateTestRecipeList()

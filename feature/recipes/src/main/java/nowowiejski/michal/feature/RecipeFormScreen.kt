@@ -1,10 +1,13 @@
 package nowowiejski.michal.feature
 
+import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
@@ -25,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,11 +37,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import org.koin.androidx.compose.koinViewModel
 
 
 data class RecipeFormData(
@@ -51,15 +58,29 @@ data class RecipeFormData(
 )
 
 @Composable
-fun RecipeFormScreen() {
-    RecipeForm() {
+fun RecipeFormRoute() {
+    RecipeFormScreen() {
 
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecipeForm(onRecipeSubmit: (RecipeFormData) -> Unit) {
+internal fun RecipeFormScreen(
+    recipeFormViewModel: RecipeFormViewModel = koinViewModel(),
+    onRecipeSubmit: (RecipeFormData) -> Unit
+) {
+
+    val uiState: RecipeFormUiState by recipeFormViewModel.uiState.collectAsStateWithLifecycle()
+    val uiEffect: Effect? by recipeFormViewModel.effect.collectAsState(
+        initial = null
+    )
+    when (uiEffect) {
+        is Effect.NavigateToSettings -> {
+            Toast.makeText(LocalContext.current, "text", Toast.LENGTH_SHORT).show()
+        }
+        else -> {}
+    }
+
     var recipeFormData by remember { mutableStateOf(RecipeFormData()) }
 
     // Image selection state
@@ -69,7 +90,14 @@ fun RecipeForm(onRecipeSubmit: (RecipeFormData) -> Unit) {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     var showIngredientsDialog by remember { mutableStateOf(false) }
-
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            uri?.let {
+                imageUri = it
+            }
+        }
+    )
     // ActivityResultLauncher for image selection
 //    val getContent = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
 //        uri?.let {
@@ -92,13 +120,15 @@ fun RecipeForm(onRecipeSubmit: (RecipeFormData) -> Unit) {
                 .background(Color.Gray)
                 .clickable {
                     imageSelectionEnabled = true
+                    recipeFormViewModel.onSelectImageClicked()
+                    galleryLauncher.launch("image/*")
                 },
             contentAlignment = Alignment.Center
         ) {
             // Display selected image or icon
             if (imageUri != null) {
                 AsyncImage(
-                    model = androidx.core.R.drawable.ic_call_answer, // Replace with actual image loading logic
+                    model = imageUri, // Replace with actual image loading logic
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
@@ -125,7 +155,10 @@ fun RecipeForm(onRecipeSubmit: (RecipeFormData) -> Unit) {
 
         OutlinedTextField(
             value = recipeFormData.recipeName,
-            onValueChange = { recipeFormData = recipeFormData.copy(recipeName = it) },
+            onValueChange = {
+                recipeFormViewModel.onRecipeNameInputChanged(it)
+                recipeFormData = recipeFormData.copy(recipeName = it)
+            },
             label = { Text("Recipe Name") },
             modifier = Modifier
                 .fillMaxWidth()
@@ -134,7 +167,10 @@ fun RecipeForm(onRecipeSubmit: (RecipeFormData) -> Unit) {
 
         OutlinedTextField(
             value = recipeFormData.shortDescription,
-            onValueChange = { recipeFormData = recipeFormData.copy(shortDescription = it) },
+            onValueChange = {
+                recipeFormViewModel.onDescriptionInputChanged(it)
+                recipeFormData = recipeFormData.copy(shortDescription = it)
+            },
             label = { Text("Short Description") },
             modifier = Modifier
                 .fillMaxWidth()
@@ -203,6 +239,7 @@ fun RecipeForm(onRecipeSubmit: (RecipeFormData) -> Unit) {
             onClick = {
                 // You can perform any additional actions on submit here
                 onRecipeSubmit(recipeFormData)
+                recipeFormViewModel.onSaveClicked()
             },
             modifier = Modifier
                 .align(Alignment.End)
@@ -228,5 +265,5 @@ fun RecipeForm(onRecipeSubmit: (RecipeFormData) -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun RecipeFormPreview() {
-    RecipeForm(onRecipeSubmit = {})
+    RecipeFormScreen(onRecipeSubmit = {})
 }
