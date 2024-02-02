@@ -5,6 +5,12 @@ import org.koin.dsl.module
 
 object DataModule {
     fun get() = module {
-        factory<RecipeRepository> { nowowiejski.michal.data.RecipeRepository(get()) }
+        factory<RecipeRepository> {
+            nowowiejski.michal.data.RecipeRepository(
+                recipeDao = get(),
+                ingredientDao = get(),
+                stepDao = get()
+            )
+        }
     }
 }

@@ -5,4 +5,6 @@ import nowowiejski.michal.model.Recipe
 
 interface RecipeRepository {
     fun getAllRecipes(): Flow<List<Recipe>>
+
+    suspend fun saveRecipe(recipe: Recipe)
 }

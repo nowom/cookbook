@@ -1,5 +1,7 @@
 package nowowiejski.michal.feature
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -20,9 +23,14 @@ import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import nowowiejski.michal.domain.usecase.SaveRecipeUseCase
+import nowowiejski.michal.model.Recipe
+import nowowiejski.michal.model.Step
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class RecipeFormViewModel : ViewModel() {
+internal class RecipeFormViewModel(
+    private val saveRecipeUseCase: SaveRecipeUseCase
+) : ViewModel() {
 
     private val intentFlow = MutableSharedFlow<UiIntent>()
     val uiState: StateFlow<RecipeFormUiState> = intentFlow
@@ -72,22 +80,49 @@ internal class RecipeFormViewModel : ViewModel() {
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
         val selectImageFlow = filterIsInstance<UiIntent.SelectImageFromGallery>()
             .flatMapLatest {
-                flowOf(
-                    UiStateChange.ChangePortions(
-                        it.portions
-                    )
-                ).onEach {
-
-                }
+                selectedImageFromGallery()
             }
             .distinctUntilChanged()
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+        val imageSelectedFlow = filterIsInstance<UiIntent.ImageSelected>()
+            .flatMapLatest {
+                flowOf(
+                    UiStateChange.SelectImage(
+                        it.imageUri
+                    )
+                )
+            }.distinctUntilChanged()
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+        val updateSourceFlow = filterIsInstance<UiIntent.UpdateSource>()
+            .flatMapLatest {
+                flowOf(
+                    UiStateChange.ChangeSource(
+                        it.source
+                    )
+                )
+            }
+            .distinctUntilChanged()
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+        val addStepFlow = filterIsInstance<UiIntent.AddStep>()
+            .flatMapLatest {
+                flowOf(
+                    UiStateChange.AddStep(
+                        it.step
+                    )
+                )
+            }
+            .distinctUntilChanged()
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+
         return merge(
             recipeNameChangeFlow,
             shortDescriptionChangeFlow,
             portionsChangeFlow,
             saveDataFlow,
             selectImageFlow,
+            imageSelectedFlow,
+            updateSourceFlow,
+            addStepFlow,
         )
     }
 
@@ -97,9 +132,21 @@ internal class RecipeFormViewModel : ViewModel() {
         }
     }
 
-    fun onDescriptionInputChanged(recipeName: String) {
+    fun onDescriptionInputChanged(description: String) {
         viewModelScope.launch {
-            intentFlow.emit(UiIntent.UpdateRecipeName(recipeName))
+            intentFlow.emit(UiIntent.UpdateShortDescription(description))
+        }
+    }
+
+    fun onSourceInputChanged(source: String) {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.UpdateSource(source))
+        }
+    }
+
+    fun onCookTimeInputChanged(cookTime: String) {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.UpdateCookTime(cookTime))
         }
     }
 
@@ -115,11 +162,46 @@ internal class RecipeFormViewModel : ViewModel() {
         }
     }
 
+    fun onImageSelected(uri: Uri) {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.ImageSelected(uri))
+        }
+    }
+
+    private fun selectedImageFromGallery() = flow<UiStateChange> {
+        _effect.send(Effect.OpenDialogChooser)
+    }
+
+    fun addRecipeStep(step: Step) {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.AddStep(step))
+        }
+    }
+
     private fun save(): Flow<UiStateChange> {
-        return flowOf(
+        return completableFlow {
+            val value = uiState.value
+//            saveRecipeUseCase(
+//                recipe = Recipe(
+//                    recipeName = value.recipeName,
+//                    ingredients = listOf(),
+//                    steps = listOf()
+//                )
+//            )
+            Log.d("asdf", uiState.value.steps.toString())
+        }.map {
             UiStateChange.SaveEvent
-        ).onEach {
+        }.onEach {
             _effect.send(Effect.NavigateToSettings)
         }
+    }
+}
+
+fun completableFlow(block: suspend () -> Unit): Flow<Result<Unit>> = flow {
+    try {
+        block()
+        emit(Result.success(Unit))
+    } catch (e: Exception) {
+        emit(Result.failure(e))
     }
 }

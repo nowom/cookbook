@@ -22,7 +22,8 @@ private fun generateTestRecipeList(): List<Recipe> {
             recipeName = "Spaghetti Bolognese",
             shortDescription = "Classic Italian pasta dish",
             portions = 4,
-            ingredients = listOf("Spaghetti", "Ground beef", "Tomato sauce", "Onion", "Garlic"),
+            ingredients = listOf(),
+            steps = listOf(),
             source = "Italian Kitchen",
             cookTime = "30 minutes"
         ),
@@ -30,12 +31,14 @@ private fun generateTestRecipeList(): List<Recipe> {
             recipeName = "Chicken Caesar Salad",
             shortDescription = "Healthy and delicious salad",
             portions = 2,
-            ingredients = listOf(
-                "Chicken breast",
-                "Romaine lettuce",
-                "Caesar dressing",
-                "Croutons"
-            ),
+//            ingredients = listOf(
+//                "Chicken breast",
+//                "Romaine lettuce",
+//                "Caesar dressing",
+//                "Croutons"
+//            ),
+            ingredients = listOf(),
+            steps = listOf(),
             source = "Fit Food Magazine",
             cookTime = "20 minutes"
         ),

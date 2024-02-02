@@ -1,13 +1,21 @@
 package nowowiejski.michal.database
 
-import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import nowowiejski.michal.database.dao.IngredientDao
 import nowowiejski.michal.database.dao.RecipeDao
+import nowowiejski.michal.database.dao.StepDao
+import nowowiejski.michal.database.model.IngredientEntity
 import nowowiejski.michal.database.model.RecipeEntity
+import nowowiejski.michal.database.model.StepEntity
 
-@Database(entities = [RecipeEntity::class], version = 1)
-
+@Database(
+    entities = [RecipeEntity::class, IngredientEntity::class, StepEntity::class],
+    version = 1,
+    exportSchema = false
+)
 abstract class CookbookDatabase : RoomDatabase() {
-    abstract fun awardPositionDao(): RecipeDao
+    abstract fun recipeDao(): RecipeDao
+    abstract fun ingredientDao(): IngredientDao
+    abstract fun stepDao(): StepDao
 }

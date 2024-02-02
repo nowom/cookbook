@@ -29,6 +29,7 @@ android {
 }
 
 dependencies {
+    implementation(project(mapOf("path" to ":core:domain")))
     val nav_version = "2.7.5"
     val koin_android_version = "3.5.0"
     val lifecycle_version = "2.6.2"

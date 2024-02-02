@@ -3,6 +3,7 @@ package nowowiejski.michal.cookbook
 import android.app.Application
 import nowowiejski.michal.common.di.DispatchersModule
 import nowowiejski.michal.data.di.DataModule
+import nowowiejski.michal.database.di.DatabaseModule
 import nowowiejski.michal.feature.di.RecipeFormModule
 import nowowiejski.michal.home.di.HomeModule
 import nowowiejski.michal.recipedetails.di.RecipeDetailsModule
@@ -23,6 +24,7 @@ class MainApplication : Application() {
             androidContext(this@MainApplication)
             modules(
                 listOf(
+                    DatabaseModule.get(),
                     DispatchersModule.get(),
                     HomeModule.get(),
                     RecipeDetailsModule.get(),

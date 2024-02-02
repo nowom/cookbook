@@ -6,15 +6,28 @@ import nowowiejski.michal.model.Recipe
 
 @Entity("recipes")
 data class RecipeEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val recipeName: String,
     val shortDescription: String,
     val portions: Int,
-    val ingredients: List<String>,
     val source: String,
     val cookTime: String,
 )
 
-fun RecipeEntity.asExternalModel() = Recipe(
-    recipeName, shortDescription, portions, ingredients, source, cookTime
+fun RecipeEntity.asExternalModel(ingredients: List<IngredientEntity>, steps: List<StepEntity>) = Recipe(
+    recipeName = recipeName,
+    shortDescription = shortDescription,
+    portions = portions,
+    ingredients = ingredients.map { it.asExternalModel() },
+    steps = steps.map { it.asExternalModel() },
+    source = source,
+    cookTime = cookTime
+)
+
+fun Recipe.asEntity() = RecipeEntity(
+    recipeName = recipeName,
+    shortDescription = shortDescription,
+    portions = portions,
+    source = source,
+    cookTime = cookTime
 )
