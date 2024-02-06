@@ -6,6 +6,7 @@ import nowowiejski.michal.database.CookbookDatabase
 import nowowiejski.michal.database.dao.IngredientDao
 import nowowiejski.michal.database.dao.RecipeDao
 import nowowiejski.michal.database.dao.StepDao
+import nowowiejski.michal.database.dao.TagDao
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -24,6 +25,9 @@ object DatabaseModule {
         single<StepDao> {
             provideStepDao(get())
         }
+        single<TagDao> {
+            provideTagDao(get())
+        }
     }
 
 }
@@ -33,8 +37,11 @@ fun provideDB(context: Context) =
         context,
         CookbookDatabase::class.java,
         "cookbook-database",
-    ).build()
+    ).createFromAsset("database/cookbook.db")
+        .fallbackToDestructiveMigration()
+        .build()
 
 fun provideRecipeDao(db: CookbookDatabase) = db.recipeDao()
 fun provideIngredientDao(db: CookbookDatabase) = db.ingredientDao()
 fun provideStepDao(db: CookbookDatabase) = db.stepDao()
+fun provideTagDao(db: CookbookDatabase) = db.tagDao()

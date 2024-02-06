@@ -31,11 +31,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -161,6 +163,26 @@ internal fun RecipeFormScreen(
                 .padding(vertical = 8.dp),
         )
 
+        //val tags = remember { mutableStateListOf("Tag1", "Tag2", "Tag3") }
+
+        var newTag by remember { mutableStateOf("") }
+
+        TagSelection(
+            tags = uiState.tags,
+            newTag = newTag,
+            onTagSelected = { selectedTag ->
+                viewModel.onSelectedTag(selectedTag.first)
+            },
+            onNewTagChanged = { newTag = it },
+            onNewTagSubmit = {
+                if (newTag.isNotBlank()) {
+                    // Obsługa nowego tagu (np. dodanie do listy tagów)
+                    viewModel.addTag()
+                    tags.add(newTag)
+                    newTag = ""
+                }
+            }
+        )
         OutlinedTextField(
             value = recipeFormData.portions.toString(),
             onValueChange = {
@@ -209,7 +231,7 @@ internal fun RecipeFormScreen(
                 .padding(vertical = 8.dp),
         )
 
-
+        val stepsState = remember { mutableStateListOf(StepState(id = 1, content = "")) }
 // Clickable box to open the bottom dialog for ingredients
 //        Box(
 //            modifier = Modifier
@@ -225,16 +247,30 @@ internal fun RecipeFormScreen(
 //        }
         // Wyświetl listę kroków przepisu
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Button(onClick = { showStepsDialog = true }) {
-                Text("Add Recipe Step")
-            }
+//        Box(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(vertical = 8.dp),
+//            contentAlignment = Alignment.Center
+//        ) {
+//            Button(onClick = { showStepsDialog = true }) {
+//                Text("Add Recipe Step")
+//            }
+//        }
+        stepsState.forEachIndexed { index, stepState ->
+            StepInput(
+                stepState = stepState,
+                onStepChanged = { newContent ->
+                    // Aktualizacja zawartości pola tekstowego
+                    stepsState[index] = stepState.copy(content = newContent)
+                    // Dodanie nowego pustego pola, jeśli aktualny krok jest ostatni i niepusty
+                    if (index == stepsState.lastIndex && newContent.isNotBlank()) {
+                        stepsState.add(StepState(id = stepState.id + 1, content = ""))
+                    }
+                }
+            )
         }
+
         uiState.steps.takeIf { it.isNotEmpty() }?.forEachIndexed { index, step ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -288,6 +324,26 @@ internal fun RecipeFormScreen(
 
     }
 }
+
+@Composable
+private fun StepInput(
+    stepState: StepState,
+    onStepChanged: (String) -> Unit
+) {
+    // Wyświetlanie pola tekstowego dla danego kroku
+    OutlinedTextField(
+        value = stepState.content,
+        onValueChange = onStepChanged,
+        label = { Text("Step ${stepState.id}") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+    )
+}
+
+// Klasa stanu dla pola tekstowego kroku
+private data class StepState(val id: Int, val content: String)
+
 
 @Preview(showBackground = true)
 @Composable

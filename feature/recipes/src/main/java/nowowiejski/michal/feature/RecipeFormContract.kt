@@ -2,6 +2,7 @@ package nowowiejski.michal.feature
 
 import android.net.Uri
 import nowowiejski.michal.model.Step
+import nowowiejski.michal.model.Tag
 
 data class RecipeFormUiState(
     val recipeName: String = "",
@@ -13,6 +14,7 @@ data class RecipeFormUiState(
     val cookTime: String = "",
     val showIngredientsDialog: Boolean = false,
     val steps: List<Step> = emptyList(),
+    val tags: List<Tag> = emptyList(),
     val error: Boolean? = null,
 )
 
@@ -21,16 +23,19 @@ internal sealed interface UiIntent {
     data class UpdateShortDescription(val description: String) : UiIntent
     data class UpdatePortions(val portions: Int) : UiIntent
     object SaveData: UiIntent
-
     object SelectImageFromGallery: UiIntent
-
     data class ImageSelected(val imageUri: Uri): UiIntent
     data class UpdateSource(val source: String): UiIntent
     data class UpdateCookTime(val cookTime: String): UiIntent
     data class AddStep(val step: Step): UiIntent
+    object GetData: UiIntent
+    data class AddTag(val tag: String): UiIntent
+    data class SelectTag(val tag: Tag): UiIntent
+
 }
 
 internal sealed class UiStateChange {
+    data class Initial(val tags: List<Tag>) : UiStateChange()
     object Loading : UiStateChange()
     object Error : UiStateChange()
     data class ChangeRecipeName(val recipeName: String) : UiStateChange()
@@ -55,6 +60,7 @@ internal sealed class UiStateChange {
         is ChangeSource -> oldState.copy(source = source)
         is ChangeCookTime -> oldState.copy(cookTime = cookTime)
         is AddStep -> oldState.copy(steps = oldState.steps.plus(step))
+        is Initial -> oldState.copy(tags = tags)
     }
 }
 

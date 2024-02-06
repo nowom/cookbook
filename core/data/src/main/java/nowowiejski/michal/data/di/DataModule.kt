@@ -1,6 +1,8 @@
 package nowowiejski.michal.data.di
 
+import nowowiejski.michal.data.TagRepositoryImpl
 import nowowiejski.michal.domain.RecipeRepository
+import nowowiejski.michal.domain.TagRepository
 import org.koin.dsl.module
 
 object DataModule {
@@ -10,6 +12,12 @@ object DataModule {
                 recipeDao = get(),
                 ingredientDao = get(),
                 stepDao = get()
+            )
+        }
+
+        factory<TagRepository> {
+            TagRepositoryImpl(
+                tagDao = get()
             )
         }
     }

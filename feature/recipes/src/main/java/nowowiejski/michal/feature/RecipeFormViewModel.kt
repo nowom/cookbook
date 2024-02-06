@@ -18,22 +18,27 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import nowowiejski.michal.domain.usecase.GetTagsUseCase
 import nowowiejski.michal.domain.usecase.SaveRecipeUseCase
 import nowowiejski.michal.model.Recipe
 import nowowiejski.michal.model.Step
+import nowowiejski.michal.model.Tag
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class RecipeFormViewModel(
-    private val saveRecipeUseCase: SaveRecipeUseCase
+    private val saveRecipeUseCase: SaveRecipeUseCase,
+    private val getTagsUseCase: GetTagsUseCase,
 ) : ViewModel() {
 
     private val intentFlow = MutableSharedFlow<UiIntent>()
     val uiState: StateFlow<RecipeFormUiState> = intentFlow
+        .onStart { emit(UiIntent.GetData) }
         .toStateChangeFlow()
         .scan(RecipeFormUiState()) { state, change -> change(state) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, RecipeFormUiState())
@@ -42,6 +47,10 @@ internal class RecipeFormViewModel(
     internal val effect: Flow<Effect> = _effect.receiveAsFlow()
 
     private fun Flow<UiIntent>.toStateChangeFlow(): Flow<UiStateChange> {
+        val initFlow = filterIsInstance<UiIntent.GetData>()
+            .flatMapLatest { loadTags() }
+            .distinctUntilChanged()
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
         val recipeNameChangeFlow = filterIsInstance<UiIntent.UpdateRecipeName>()
             .flatMapLatest {
                 flowOf(
@@ -123,7 +132,16 @@ internal class RecipeFormViewModel(
             imageSelectedFlow,
             updateSourceFlow,
             addStepFlow,
+            initFlow,
         )
+    }
+
+    private fun loadTags(): Flow<UiStateChange> {
+        return getTagsUseCase().map {
+            UiStateChange.Initial(
+                it
+            )
+        }
     }
 
     fun onRecipeNameInputChanged(recipeName: String) {
@@ -178,16 +196,28 @@ internal class RecipeFormViewModel(
         }
     }
 
+    fun addNewTag(tag: String) {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.AddTag(tag))
+        }
+    }
+
+    fun onSelectedTag(tag: Tag) {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.SelectTag(tag))
+        }
+    }
+
     private fun save(): Flow<UiStateChange> {
         return completableFlow {
             val value = uiState.value
-//            saveRecipeUseCase(
-//                recipe = Recipe(
-//                    recipeName = value.recipeName,
-//                    ingredients = listOf(),
-//                    steps = listOf()
-//                )
-//            )
+            saveRecipeUseCase(
+                recipe = Recipe(
+                    recipeName = value.recipeName,
+                    ingredients = listOf(),
+                    steps = listOf()
+                )
+            )
             Log.d("asdf", uiState.value.steps.toString())
         }.map {
             UiStateChange.SaveEvent
