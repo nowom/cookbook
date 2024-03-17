@@ -1,13 +1,13 @@
 package nowowiejski.michal.feature
 
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -26,8 +26,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import nowowiejski.michal.domain.usecase.GetTagsUseCase
 import nowowiejski.michal.domain.usecase.SaveRecipeUseCase
+import nowowiejski.michal.model.Ingredient
 import nowowiejski.michal.model.Recipe
-import nowowiejski.michal.model.Step
 import nowowiejski.michal.model.Tag
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -71,16 +71,6 @@ internal class RecipeFormViewModel(
             }
             .distinctUntilChanged()
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
-        val portionsChangeFlow = filterIsInstance<UiIntent.UpdatePortions>()
-            .flatMapLatest {
-                flowOf(
-                    UiStateChange.ChangePortions(
-                        it.portions
-                    )
-                )
-            }
-            .distinctUntilChanged()
-            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
         val saveDataFlow = filterIsInstance<UiIntent.SaveData>()
             .flatMapLatest {
                 save()
@@ -115,24 +105,65 @@ internal class RecipeFormViewModel(
         val addStepFlow = filterIsInstance<UiIntent.AddStep>()
             .flatMapLatest {
                 flowOf(
-                    UiStateChange.AddStep(
-                        it.step
-                    )
+                    UiStateChange.AddStep
+                )
+            }
+
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+        val addTagFlow = filterIsInstance<UiIntent.AddTag>()
+            .flatMapLatest {
+                flowOf(
+                    UiStateChange.AddTag
                 )
             }
             .distinctUntilChanged()
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+        val changeStepFlow = filterIsInstance<UiIntent.ChangeStep>()
+            .flatMapLatest {
+                flowOf(
+                    UiStateChange.UpdateStep(it.index, it.description)
+                )
+            }
+            .distinctUntilChanged()
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+        val cookbookFlow = filterIsInstance<UiIntent.UpdateCookTime>()
+            .map { intent->
+                UiStateChange.ChangeCookTime(intent.cookTime)
+            }
+            .distinctUntilChanged()
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
 
+        val removeStepFlow = filterIsInstance<UiIntent.RemoveStep>()
+            .map { intent ->
+                UiStateChange.RemoveStep(intent.step)
+            }
+            .distinctUntilChanged()
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+        val increasePortionFlow = filterIsInstance<UiIntent.IncreaseServings>()
+            .map {
+                UiStateChange.IncreaseServings
+            }
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+        val decreasePortionFlow = filterIsInstance<UiIntent.DecreaseServings>()
+            .map {
+                UiStateChange.DecreaseServings
+            }
+            .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
         return merge(
             recipeNameChangeFlow,
             shortDescriptionChangeFlow,
-            portionsChangeFlow,
             saveDataFlow,
             selectImageFlow,
             imageSelectedFlow,
             updateSourceFlow,
             addStepFlow,
             initFlow,
+            addTagFlow,
+            changeStepFlow,
+            removeStepFlow,
+            increasePortionFlow,
+            decreasePortionFlow,
+            cookbookFlow,
         )
     }
 
@@ -190,9 +221,21 @@ internal class RecipeFormViewModel(
         _effect.send(Effect.OpenDialogChooser)
     }
 
-    fun addRecipeStep(step: Step) {
+    fun changeStepDescription(index: Int, stepDisplayable: String) {
         viewModelScope.launch {
-            intentFlow.emit(UiIntent.AddStep(step))
+            intentFlow.emit(UiIntent.ChangeStep(index, stepDisplayable))
+        }
+    }
+
+    fun addStep() {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.AddStep)
+        }
+    }
+
+    fun removeStep(stepDisplayable: StepDisplayable) {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.RemoveStep(stepDisplayable))
         }
     }
 
@@ -208,21 +251,71 @@ internal class RecipeFormViewModel(
         }
     }
 
+    fun onNumberOfServingsChanged(servings: Int) {
+        viewModelScope.launch {
+            //intentFlow.emit(UiIntent.UpdateServings(servings))
+        }
+    }
+
+    fun onNumberOfServingsIncrease() {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.IncreaseServings)
+        }
+    }
+
+    fun onNumberOfServingsDecrease() {
+        viewModelScope.launch {
+            intentFlow.emit(UiIntent.DecreaseServings)
+        }
+    }
+
+    private val _ingredients = MutableStateFlow(listOf(""))
+    val ingredients: StateFlow<List<String>> get() = _ingredients
+
+    fun addEmptyIngredient() {
+        val currentList = _ingredients.value.toMutableList()
+        currentList.add("")
+        _ingredients.value = currentList
+    }
+
+    fun removeIngredient(index: Int) {
+        val currentList = _ingredients.value.toMutableList()
+        if (index in currentList.indices) {
+            currentList.removeAt(index)
+            _ingredients.value = currentList
+        }
+    }
+
+    fun updateIngredient(index: Int, newName: String) {
+        val currentList = _ingredients.value.toMutableList()
+        if (index in currentList.indices) {
+            currentList[index] = newName
+            _ingredients.value = currentList
+        }
+    }
+
     private fun save(): Flow<UiStateChange> {
         return completableFlow {
             val value = uiState.value
             saveRecipeUseCase(
                 recipe = Recipe(
                     recipeName = value.recipeName,
-                    ingredients = listOf(),
-                    steps = listOf()
+                    shortDescription = value.shortDescription,
+                    source = value.recipeName,
+                    cookTime = value.cookTime,
+                    portions = value.servings,
+                    ingredients = ingredients.value.map {
+                              Ingredient(it, "10g")
+                    },
+                    steps = value.steps.map {
+                        it.toDomain()
+                    },
                 )
             )
-            Log.d("asdf", uiState.value.steps.toString())
         }.map {
             UiStateChange.SaveEvent
         }.onEach {
-            _effect.send(Effect.NavigateToSettings)
+            _effect.send(Effect.NavigateToHome)
         }
     }
 }

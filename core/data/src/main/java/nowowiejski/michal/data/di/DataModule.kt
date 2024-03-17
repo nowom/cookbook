@@ -11,7 +11,8 @@ object DataModule {
             nowowiejski.michal.data.RecipeRepository(
                 recipeDao = get(),
                 ingredientDao = get(),
-                stepDao = get()
+                stepDao = get(),
+                appDispatcher = get(),
             )
         }
 

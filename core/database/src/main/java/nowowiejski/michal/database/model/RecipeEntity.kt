@@ -29,5 +29,5 @@ fun Recipe.asEntity() = RecipeEntity(
     shortDescription = shortDescription,
     portions = portions,
     source = source,
-    cookTime = cookTime
+    cookTime = cookTime.orEmpty()
 )

@@ -1,10 +1,10 @@
 package nowowiejski.michal.feature
 
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,30 +14,23 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,37 +39,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import kotlinx.coroutines.flow.StateFlow
-import nowowiejski.michal.model.Step
+import nowowiejski.michal.designsystem.component.TextInput
 import org.koin.androidx.compose.koinViewModel
 
-data class RecipeFormData(
-    val recipeName: String = "",
-    val shortDescription: String = "",
-    val portions: Int = 0,
-    val imageUri: Uri? = null,
-    val ingredients: List<String> = emptyList(),
-    val source: String = "",
-    val cookTime: String = ""
-)
-
 @Composable
-fun RecipeFormRoute() {
-    RecipeFormScreen() {
-
-    }
+fun RecipeFormRoute(
+    onIngredientClick: () -> Unit,
+    onRecipeSubmit: () -> Unit,
+) {
+    RecipeFormScreen(
+        onRecipeSubmit = onRecipeSubmit,
+        onIngredientClick = onIngredientClick
+    )
 }
 
 @Composable
 internal fun RecipeFormScreen(
     viewModel: RecipeFormViewModel = koinViewModel(),
-    onRecipeSubmit: (RecipeFormData) -> Unit
+    onRecipeSubmit: () -> Unit,
+    onIngredientClick: () -> Unit,
 ) {
 
     val uiState: RecipeFormUiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,20 +78,20 @@ internal fun RecipeFormScreen(
     val context = LocalContext.current
     LaunchedEffect(uiEffect) {
         when (uiEffect) {
-            is Effect.NavigateToSettings-> {
+            is Effect.NavigateToHome -> {
                 Toast.makeText(context, "Navigate to settings", Toast.LENGTH_SHORT).show()
+                onRecipeSubmit()
             }
+
             is Effect.OpenDialogChooser -> {
                 galleryLauncher.launch("image/*")
             }
+
             else -> {}
         }
     }
 
-    var recipeFormData by remember { mutableStateOf(RecipeFormData()) }
-
     var showIngredientsDialog by remember { mutableStateOf(false) }
-    var showStepsDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -125,7 +110,6 @@ internal fun RecipeFormScreen(
                 },
             contentAlignment = Alignment.Center
         ) {
-            // Display selected image or icon
             if (uiState.imageUrl != null) {
                 AsyncImage(
                     model = uiState.imageUrl,
@@ -138,32 +122,21 @@ internal fun RecipeFormScreen(
                 Icon(Icons.Default.Add, contentDescription = "Add Photo")
             }
         }
-
-        OutlinedTextField(
+        TextInput(
             value = uiState.recipeName,
             onValueChange = {
                 viewModel.onRecipeNameInputChanged(it)
-                recipeFormData = recipeFormData.copy(recipeName = it)
             },
-            label = { Text("Recipe Name") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+            textFieldText = "Recipe Name",
         )
 
-        OutlinedTextField(
-            value = recipeFormData.shortDescription,
+        TextInput(
+            value = uiState.shortDescription,
             onValueChange = {
                 viewModel.onDescriptionInputChanged(it)
-                recipeFormData = recipeFormData.copy(shortDescription = it)
             },
-            label = { Text("Short Description") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+            textFieldText = "Short Description",
         )
-
-        //val tags = remember { mutableStateListOf("Tag1", "Tag2", "Tag3") }
 
         var newTag by remember { mutableStateOf("") }
 
@@ -176,118 +149,125 @@ internal fun RecipeFormScreen(
             onNewTagChanged = { newTag = it },
             onNewTagSubmit = {
                 if (newTag.isNotBlank()) {
-                    // Obsługa nowego tagu (np. dodanie do listy tagów)
-                    viewModel.addTag()
-                    tags.add(newTag)
-                    newTag = ""
+                    //TODO handling new tag
+                    viewModel.addNewTag(newTag)
                 }
             }
         )
-        OutlinedTextField(
-            value = recipeFormData.portions.toString(),
-            onValueChange = {
-                val portions = it.toIntOrNull() ?: 0
-                recipeFormData = recipeFormData.copy(portions = portions)
-            },
-            label = { Text("Number of Portions") },
-            keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    // You can perform any additional actions on submit here
-                    onRecipeSubmit(recipeFormData)
-                }
-            ),
+//        var portions by remember {
+//            mutableStateOf(1)
+//        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
-        )
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            Text("Number of Portions:")
+            Spacer(modifier = Modifier.width(16.dp))
+            Row(
+                modifier = Modifier
+                    .background(Color.Transparent)
+                    .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = {
+                    if (uiState.servings > 1) {
+                        viewModel.onNumberOfServingsDecrease()
+                    }
+                }) {
+                    Icon(Icons.Filled.Clear, contentDescription = "Minus")
+                }
+                Text(
+                    text = uiState.servings.toString(),
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                IconButton(onClick = {
+                    viewModel.onNumberOfServingsIncrease()
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Plus")
+                }
+            }
+        }
 
-        // OutlinedTextField for the source field
-        OutlinedTextField(
-            value = recipeFormData.source,
+        TextInput(
+            value = uiState.source,
             onValueChange = {
-                recipeFormData = recipeFormData.copy(source = it)
                 viewModel.onSourceInputChanged(it)
             },
-            label = { Text("Source") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+            textFieldText = "Source",
         )
 
-        // OutlinedTextField for the cook time field
-        OutlinedTextField(
-            value = recipeFormData.cookTime,
+        TextInput(
+            value = uiState.cookTime,
             onValueChange = {
-                recipeFormData = recipeFormData.copy(cookTime = it)
                 viewModel.onCookTimeInputChanged(it)
             },
-            label = { Text("Cook Time") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+            textFieldText = "Cook Time",
         )
 
-        val stepsState = remember { mutableStateListOf(StepState(id = 1, content = "")) }
-// Clickable box to open the bottom dialog for ingredients
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .aspectRatio(16f / 9)
-//                .background(Color.Gray)
-//                .clickable {
-//                    showIngredientsDialog = true
-//                },
-//            contentAlignment = Alignment.Center
-//        ) {
-//            Icon(Icons.Rounded.ArrowDropDown, contentDescription = "Ingredients")
-//        }
-        // Wyświetl listę kroków przepisu
-
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(vertical = 8.dp),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            Button(onClick = { showStepsDialog = true }) {
-//                Text("Add Recipe Step")
-//            }
-//        }
-        stepsState.forEachIndexed { index, stepState ->
+        uiState.steps.forEachIndexed { index, stepState ->
             StepInput(
                 stepState = stepState,
-                onStepChanged = { newContent ->
-                    // Aktualizacja zawartości pola tekstowego
-                    stepsState[index] = stepState.copy(content = newContent)
-                    // Dodanie nowego pustego pola, jeśli aktualny krok jest ostatni i niepusty
-                    if (index == stepsState.lastIndex && newContent.isNotBlank()) {
-                        stepsState.add(StepState(id = stepState.id + 1, content = ""))
+                onStepChanged = { step ->
+                    viewModel.changeStepDescription(index, step)
+                    if (index == uiState.steps.lastIndex && step.isNotBlank()) {
+                        viewModel.addStep()
                     }
+                },
+                onRemoveStep = {
+                    viewModel.removeStep(stepState)
                 }
             )
         }
+//        val stepsState = remember { mutableStateListOf(StepDisplayable(id = 1, description = "")) }
+//
+//        stepsState.forEachIndexed { index, stepState ->
+//            StepInput(
+//                stepState = stepState,
+//                onStepChanged = { step ->
+//                    //stepsState[index] = stepState.copy(description = step.description)
+//                    viewModel.changeStepDescription(step)
+//                    // Dodanie nowego pustego pola, jeśli aktualny krok jest ostatni i niepusty
+//                    if (index == uiState.steps.lastIndex && step.description.isNotBlank()) {
+//                        //uiState.steps.add(StepDisplayable(id = stepState.id + 1, description = ""))
+//                    }
+//                },
+//                onRemoveStep = {
+//
+//                }
+//            )
+//        }
 
-        uiState.steps.takeIf { it.isNotEmpty() }?.forEachIndexed { index, step ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                Text(text = step.description)
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(modifier = Modifier.size(12.dp),
-                    onClick = { /* Obsługa kliknięcia przycisku edycji */ }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit")
-                }
-            }
+//        uiState.steps.takeIf { it.isNotEmpty() }?.forEachIndexed { index, step ->
+//            Row(
+//                verticalAlignment = Alignment.CenterVertically,
+//                modifier = Modifier.padding(vertical = 8.dp)
+//            ) {
+//                Text(text = step.description)
+//                Spacer(modifier = Modifier.weight(1f))
+//                IconButton(modifier = Modifier.size(12.dp),
+//                    onClick = { /* Obsługa kliknięcia przycisku edycji */ }) {
+//                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+//                }
+//            }
+//        }
+
+        Button(
+            onClick = { showIngredientsDialog = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text("Dodaj składniki")
         }
+
+
         Button(
             onClick = {
                 // You can perform any additional actions on submit here
-                onRecipeSubmit(recipeFormData)
+                onRecipeSubmit()
                 viewModel.onSaveClicked()
             },
             modifier = Modifier
@@ -299,27 +279,15 @@ internal fun RecipeFormScreen(
 
         // Bottom dialog for ingredients selection
         if (showIngredientsDialog) {
-            IngredientsDialog(
-                onIngredientsSelected = { selectedIngredients ->
-                    // Handle the selected ingredients
-                    // For example, update the state, display them, etc.
-                    //recipeFormData = recipeFormData.copy(ingredients = selectedIngredients)
-                },
-                onDismiss = { showIngredientsDialog = false }
-            )
-        }
-        var newStepDescription by remember { mutableStateOf("") }
-
-        if (showStepsDialog) {
-            AddStepDialog(
-                onAddStep = {
-                    viewModel.addRecipeStep(Step(it))
-                    showStepsDialog = false
-                },
-                onDismiss = { showStepsDialog = false },
-                newStepDescription = newStepDescription,
-                onDescriptionChange = { newStepDescription = it }
-            )
+//            IngredientsDialog(
+//                onIngredientsSelected = { selectedIngredients ->
+//                    // Handle the selected ingredients
+//                    // For example, update the state, display them, etc.
+//                    //recipeFormData = recipeFormData.copy(ingredients = selectedIngredients)
+//                },
+//                onDismiss = { showIngredientsDialog = false }
+//            )
+            onIngredientClick.invoke()
         }
 
     }
@@ -327,26 +295,30 @@ internal fun RecipeFormScreen(
 
 @Composable
 private fun StepInput(
-    stepState: StepState,
-    onStepChanged: (String) -> Unit
+    stepState: StepDisplayable,
+    onStepChanged: (String) -> Unit,
+    onRemoveStep: () -> Unit
 ) {
-    // Wyświetlanie pola tekstowego dla danego kroku
     OutlinedTextField(
-        value = stepState.content,
+        value = stepState.description,
         onValueChange = onStepChanged,
-        label = { Text("Step ${stepState.id}") },
+        label = { Text("Step Description") },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
+        trailingIcon = {
+            if (stepState.description.isNotEmpty()) {
+                IconButton(onClick = onRemoveStep) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete Step")
+                }
+            }
+        }
     )
 }
-
-// Klasa stanu dla pola tekstowego kroku
-private data class StepState(val id: Int, val content: String)
-
 
 @Preview(showBackground = true)
 @Composable
 fun RecipeFormPreview() {
-    RecipeFormScreen(onRecipeSubmit = {})
+    RecipeFormScreen(onRecipeSubmit = {},
+        onIngredientClick = {})
 }

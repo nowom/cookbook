@@ -54,6 +54,7 @@ dependencies {
     val koin_android_version = "3.5.0"
 
     implementation("androidx.navigation:navigation-compose:$nav_version")
+    implementation(project(":core:design-system"))
 
     implementation(project(":feature:recipes"))
     implementation(project(":feature:shopping"))

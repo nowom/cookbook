@@ -2,6 +2,7 @@ package nowowiejski.michal.database.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import nowowiejski.michal.model.Step
 
@@ -12,11 +13,11 @@ import nowowiejski.michal.model.Step
         parentColumns = ["id"],
         childColumns = ["recipeId"],
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
 )
 data class StepEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    val stepId: Long = 0,
     val recipeId: Long,
     val description: String,
 )

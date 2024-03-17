@@ -14,7 +14,6 @@ import nowowiejski.michal.database.model.TagEntity
 @Database(
     entities = [RecipeEntity::class, IngredientEntity::class, StepEntity::class, TagEntity::class,],
     version = 1,
-    exportSchema = false
 )
 abstract class CookbookDatabase : RoomDatabase() {
     abstract fun recipeDao(): RecipeDao

@@ -1,7 +1,10 @@
-package nowowiejski.michal.cookbook.ui.designsystem
+package nowowiejski.michal.cookbook.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Create
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
 
 
@@ -20,12 +23,17 @@ val bottomNavItems = listOf(
     BottomNavItem(
         name = "Create",
         route = Destinations.RECIPE_FORM_ROUTE,
-        icon = Icons.Rounded.Home,
+        icon = Icons.Rounded.Create,
     ),
     BottomNavItem(
-        name = "Settings",
+        name = "Shopping list",
         route = Destinations.SHOPPING_LIST_ROUTE,
-        icon = Icons.Rounded.Home,
+        icon = Icons.Rounded.ShoppingCart,
+    ),
+    BottomNavItem(
+        name = "My pantry",
+        route = Destinations.SHOPPING_LIST_ROUTE,
+        icon = Icons.Rounded.Menu,
     ),
 )
 

@@ -12,7 +12,7 @@ interface StepDao {
     @Insert
     suspend fun insertStep(step: StepEntity)
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(steps: List<StepEntity>)
+    suspend fun insertAll(steps: List<StepEntity>): List<Long>
     @Query("SELECT * FROM steps WHERE recipeId = :recipeId")
     fun getStepsForRecipe(recipeId: Long): Flow<List<StepEntity>>
 }

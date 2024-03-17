@@ -8,5 +8,5 @@ data class Recipe(
     val ingredients: List<Ingredient>,
     val steps: List<Step>,
     val source: String = "",
-    val cookTime: String = ""
+    val cookTime: String? = null,
 )

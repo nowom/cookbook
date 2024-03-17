@@ -47,11 +47,6 @@ internal fun TagSelection(
             )
         }
     }
-    NewTagInput(
-        newTag = newTag,
-        onNewTagChanged = onNewTagChanged,
-        onNewTagSubmit = onNewTagSubmit
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

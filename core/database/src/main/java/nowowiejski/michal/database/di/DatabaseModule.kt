@@ -37,9 +37,7 @@ fun provideDB(context: Context) =
         context,
         CookbookDatabase::class.java,
         "cookbook-database",
-    ).createFromAsset("database/cookbook.db")
-        .fallbackToDestructiveMigration()
-        .build()
+    ).build()
 
 fun provideRecipeDao(db: CookbookDatabase) = db.recipeDao()
 fun provideIngredientDao(db: CookbookDatabase) = db.ingredientDao()

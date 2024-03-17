@@ -30,6 +30,8 @@ android {
 
 dependencies {
     implementation(project(mapOf("path" to ":core:domain")))
+    implementation(project(":core:design-system"))
+
     val nav_version = "2.7.5"
     val koin_android_version = "3.5.0"
     val lifecycle_version = "2.6.2"
@@ -45,12 +47,6 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:$koin_android_version")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version")
 
-    implementation(platform("androidx.compose:compose-bom:2023.03.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material3:material3:1.1.2")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

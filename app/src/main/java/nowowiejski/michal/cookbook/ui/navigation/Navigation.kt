@@ -1,10 +1,8 @@
-package nowowiejski.michal.cookbook.ui.designsystem
+package nowowiejski.michal.cookbook.ui.navigation
 
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material3.NavigationBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 
